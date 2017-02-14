@@ -2,6 +2,18 @@ import cv2
 import numpy as np
 import math
 
+import threading
+
+ser = serial.Serial("/dev/ttyS1", 115200, timeout=1)
+
+class FuncThread(threading.Thread):
+	def __init__(self, target, *args):
+		threading.Thread.__init__(self)
+		self._target = target
+		self._args = args
+	def run(self):
+		self._target(*self._args)
+
 
 SCREEN_X = 640
 SCREEN_Y = 480
@@ -14,14 +26,10 @@ REF_CAM_H = 0#.85 #SPECIFY		#height of camera on the robot above the ground
 
 cap = cv2.VideoCapture(0)
 
-cv2.namedWindow("d")
-
 lower_g = np.array([65, 100, 100])
 upper_g = np.array([85, 255, 255])
 
-def turn(theta):
-	print("turn " + str(theta) + " degrees")
-	input("yo")
+data = ["", "", "", ""]
 
 def scrn21x(x):
 	return (x / SCREEN_X)*2-1
@@ -49,50 +57,56 @@ def readImage():
 		area = rect[1][0]*rect[1][1]
 		areas.append(area)
 	actl = sorted(zip(rects, areas, contours), key=lambda x: x[1], reverse=True)
-	if(len(actl) > 0):
-		cv2.circle(frame, (int(actl[0][0][0][0]),int(actl[0][0][0][1])), 5, [180,180,180],-1)
-	cv2.imshow("d",frame)
-	if cv2.waitKey(1) & 0xFF == ord('q'):
-		quit()
-
 	return actl
 
 def shootDistance_calculate(mid_y):
 	theta = FOV_Y / 2 * mid_y + REF_THETA
 	distance = (REF_TOW_H - REF_CAM_H) / math.tan(math.radians(theta))
 	return theta, distance
-def shootDistance_print(mid_x, mid_y, theta, distance):
+'''def shootDistance_print(mid_x, mid_y, theta, distance):
 	print("mid_x" + str(mid_x))
 	print("mid_y" + str(mid_y))
 	print("theta" + str(theta))
-	print("Dist:" + str(distance),end="\n")
-def shootDistance():
+	print("Dist:" + str(distance),end="\n")'''
+def readDistance():
 	while(True):
 		cl = readImage()
 		if( len(cl) > 0):
+			global data
 
 			topmost = -1*scrn21y(tuple(cl[0][2][cl[0][2][:,:,1].argmin()][0])[1])	#I don't know how this works
 			bottommost = -1*scrn21y(tuple(cl[0][2][cl[0][2][:,:,1].argmax()][0])[1]) #but the arrays are 4 deep
 			mid_x = cl[0][0][0][0]	#i know right
 
-			theta, distance = shootDistance_calculate(topmost)
-			shootDistance_print(mid_x, mid_y_t, theta, distance)
+			theta1, distance1 = shootDistance_calculate(topmost)
+			theta2, distance2 = shootDistance_calculate(bottommost)
 
-			theta, distance = shootDistance_calculate(bottommost)
-			shootDistance_print(mid_x, mid_y_b, theta, distance)
-
-			print("\n\n")
-			
-
-			return distance
+			data = [mid_x, cl[0][0][0][1], (theta1+theta2)/2, (distance1+distance2)/2]
 		else:
 			print("", end=".", flush=True)
 
 
-def main():
+def checkGet():
 	while True:
-		shootDistance()
+		global ser
+		ans = ser.readLine()
+		if ans:
+			global data
+			ser.write("sm" + str(data[0]) + "m" + str(data[1]) + "m" + str(data[2]) + "m" + str(data[3]) + "e\n".encode())
+
+def main():
+	readThread = FuncThread(readDistance)
+	readThread.setDaemon(True)
+	readThread.start()
+
+	chkThread = FuncThread(checkGet)
+	chkThread.setDaemon(True)
+	chkThread.start()
+
 main()
+input("stop?")
+
+
 
 '''for i in cl:
 		for j in cl:
