@@ -2,18 +2,19 @@
 
 import math
 import serial
+from time import sleep
 
-DDZ_ROT = 0.06
+DDZ_ROT = 4#0.06
 MIN_ROT_SPD = 0.01
 MAX_ROT_SPD = 0.2
 
 DDZ_MOV = 0.1
 MIN_MOV_SPD = 0.05
 
-REF_DIST = 2 	#CHANGE -- equal to distance at which the tower tape is in the dead middle of the camera's view
-		#Should be findable from REF_THETA and REF_CAM_H in the Pi file
-
-REF_CHNG_H = 1.9	#CHANGE 
+REF_THETA = 40
+REF_TOW_H = 1.9
+REF_CAM_H = 0
+REF_DIST = (REF_TOW_H - REF_CAM_H) / math.tan(REF_THETA)	
 
 MUZZLE_VELOCITY = 30	#meters/second
 COMPLETELY_ARBITRARY_CONSTANT = 1
@@ -26,15 +27,23 @@ class Tthhinnggyy:
 	ser = None
 
 	def __init__(self):
-		self.ser = serial.Serial("/dev/ttyS1", 115200, timeout=1)
+		self.ser = serial.Serial("/dev/ttyAMA0", 115200, timeout=0.05)
+
+	def autonTankDrive(self, l, r):
+		print("turn\t" + str(l) + "\t" str(r))
 
 	def receive(self):
-		self.ser.write("hoo boy, waffles\n")
-		ans = self.ser.readLine()
-		ans = ans.decode()
-		return ans
+		self.ser.write("boom ya got waffles\n".encode())
+		ans = self.ser.readline()
+		if ans:
+			ans = self.uncode(ans.decode())
+			self.mid_x = float(ans[0])
+			self.mid_y = float(ans[1])
+			self.theta = float(ans[2])
+			self.distance = float(ans[3])
+		#print(str(self.mid_x) + "\t" + str(self.mid_y) + "\t" + str(self.theta) + "\t" + str(self.distance))
 
-	def decode(self, string):
+	def uncode(self, string):
 		stuff = []
 		number = ""
 		state = "previous"
@@ -58,31 +67,23 @@ class Tthhinnggyy:
 		return stuff
 
 	def centerSide(self):
-		if(math.abs(self.theta) <= DDZ_ROT):	#radians, arbitrary deadzone value
-			spd = max(MIN_ROT_SPD, min(MAX_ROT_SPD, math.abs(self.theta)))*math.copysign(1.0, self.theta)	#again arbitrary numbers
+		if(abs(self.theta - REF_THETA) > DDZ_ROT):	#radians, arbitrary deadzone value
+			spd = math.copysign(0.2, self.theta)	#again arbitrary numbers
 			self.autonTankDrive(spd, -spd)
 			return False
 		return True
 
 	def centerLine(self):
-		distance -= REF_DIST
-		if(math.abs(self.distance) <= DDZ_MOV):	#meters, arbitrary deadzone value
-			spd = max(MIN_MOV_SPD, math.abs(self.distance))*math.copysign(1.0, self.distance)
+		if(abs(distance - REF_DIST) > DDZ_MOV):	#meters, arbitrary deadzone value
+			spd = copysign(0.1, distance)#max(MIN_MOV_SPD, abs(distance))*math.copysign(1.0, distance)
 			self.autonTankDrive(spd,spd)
 			return False
 		return True
 
-	def HooBoyShoot(self):
-		pass
-		#MAGIC -- call a function that spins the shooting wheels
 
-
-thng = Tthhinnggyy()
-thng.receive()
-
-
+#max(MIN_ROT_SPD, min(MAX_ROT_SPD, abs(self.theta - REF_THETA)))
 '''	def ShootDistance(self):	#I *guarantee* this does *not* work
-		angle = math.arcsin((REF_CHNG_H/self.distance+4.9*self.distance)/MUZZLE_VELOCITY)
+		angle = math.arcsin(((REF_TOW_H - REF_CAM_H)/self.distance+4.9*self.distance)/MUZZLE_VELOCITY)
 		#MAGIC -- set the shooting apparatus angle
 		#MAGIC -- call a function that spins the shooting wheels
 
@@ -90,7 +91,8 @@ thng.receive()
 		#it can be changed, but it's not important anyway
 '''
 '''
-if centerSide() and centerLine() :	#this works because of short-circuiting
+thng.receive()
+if thng.centerSide() and thng.centerLine() :	#this works because of short-circuiting
 	HooBoyShoot()
 '''
 

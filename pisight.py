@@ -1,10 +1,11 @@
 import cv2
 import numpy as np
 import math
-
+import serial
 import threading
+from time import sleep
 
-ser = serial.Serial("/dev/ttyS1", 115200, timeout=1)
+ser = serial.Serial("/dev/ttyAMA0", 115200, timeout=1)	#on the pi it's AMA0
 
 class FuncThread(threading.Thread):
 	def __init__(self, target, *args):
@@ -34,7 +35,7 @@ data = ["", "", "", ""]
 def scrn21x(x):
 	return (x / SCREEN_X)*2-1
 def scrn21y(y):
-	return (y / SCREEN_Y)*2-1
+	return (y / SCREEN_Y)*-2+1
 
 def readImage():
 	ret, frame = cap.read() #gets frame from camera
@@ -74,14 +75,14 @@ def readDistance():
 		if( len(cl) > 0):
 			global data
 
-			topmost = -1*scrn21y(tuple(cl[0][2][cl[0][2][:,:,1].argmin()][0])[1])	#I don't know how this works
-			bottommost = -1*scrn21y(tuple(cl[0][2][cl[0][2][:,:,1].argmax()][0])[1]) #but the arrays are 4 deep
-			mid_x = cl[0][0][0][0]	#i know right
+			topmost = scrn21y(tuple(cl[0][2][cl[0][2][:,:,1].argmin()][0])[1])	#I don't know how this works
+			bottommost = scrn21y(tuple(cl[0][2][cl[0][2][:,:,1].argmax()][0])[1]) #but the arrays are 4 deep
+			mid_x = scrn21x(cl[0][0][0][0])	#i know right
 
 			theta1, distance1 = shootDistance_calculate(topmost)
 			theta2, distance2 = shootDistance_calculate(bottommost)
 
-			data = [mid_x, cl[0][0][0][1], (theta1+theta2)/2, (distance1+distance2)/2]
+			data = [mid_x, scrn21y(cl[0][0][0][1]), (theta1+theta2)/2, (distance1+distance2)/2]
 		else:
 			print("", end=".", flush=True)
 
@@ -89,10 +90,11 @@ def readDistance():
 def checkGet():
 	while True:
 		global ser
-		ans = ser.readLine()
+		ans = ser.readline()
 		if ans:
 			global data
-			ser.write("sm" + str(data[0]) + "m" + str(data[1]) + "m" + str(data[2]) + "m" + str(data[3]) + "e\n".encode())
+			print("transmit")
+			ser.write(("sm" + str(data[0]) + "m" + str(data[1]) + "m" + str(data[2]) + "m" + str(data[3]) + "e\n").encode())
 
 def main():
 	readThread = FuncThread(readDistance)
