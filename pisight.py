@@ -166,6 +166,7 @@ def checkGet():
 			if ans.decode() == "the times they are\n":
 				global SwitchState
 				SwitchState = True
+				ser.write("Affirmative\n")
 				print("switching")
 			else:
 				#print("transmit")
