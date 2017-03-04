@@ -131,7 +131,7 @@ def readDistanceGears():
 		mid_x = scrn21x(cl[0][0][0][0])
 	else:
 		mid_x = (scrn21x(cl[0][0][0][0]) + scrn21x(cl[1][0][0][0]))/2
-	data = [mid_x, 0, 0, 0]	#don't use
+	data = [mid_x, 0, 0, -42]	#don't use
 
 CamState = "Shooter"	#vidcap default is 0
 SwitchState = False
