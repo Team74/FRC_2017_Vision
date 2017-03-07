@@ -6,17 +6,21 @@ import threading
 from time import sleep
 from time import time
 
+import random
+
 DEBUG_MODE = 0
 
-per = 1000000
+per = 50000
 countper = 0
 thingabob = per
 class MockSerial:
 	def readline(self):
 		global thingabob, per, countper
-		if countper >= 10:
+		if countper >= 6:
 			countper = 0
-			return "the times they are\n".encode()
+			n = bool(random.getrandbits(1))
+			print(str(n))
+			return ("shooter\n" if n else "gears\n").encode()
 		if thingabob:
 			thingabob -= 1
 			return "".encode()
@@ -137,16 +141,16 @@ CamState = "Shooter"	#vidcap default is 0
 SwitchState = False
 def readDistance():
 	global CamState, SwitchState, cap
-	if SwitchState:
+	if SwitchState != False and SwitchState != CamState:
 		global data
-		SwitchState = False
 		data = ["", "", "", ""]
-		if CamState == "Shooter":
+		if SwitchState == "Gears":
 			cap = cv2.VideoCapture(1)
 			CamState = "Gears"
 		else:
 			cap = cv2.VideoCapture(0)
 			CamState = "Shooter"
+		SwitchState = False
 	if CamState == "Shooter":
 		readDistanceShooter()
 	else:
@@ -163,10 +167,10 @@ def checkGet():
 		ans = ser.readline()
 		if ans:
 			global data
-			if ans.decode() == "the times they are\n":
+			if ans.decode() == "shooter\n" or ans.decode() == "gears\n":
 				global SwitchState
-				SwitchState = True
-				ser.write("Affirmative\n")
+				SwitchState = "Shooter" if ans.decode() == "shooter\n" else "Gears"
+				ser.write("Affirmative\n".encode())
 				print("switching")
 			else:
 				#print("transmit")
