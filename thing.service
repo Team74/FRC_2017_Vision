@@ -1,0 +1,11 @@
+[Unit]
+Description="A lovely lurtle process runner"
+
+[Service]
+Type=simple
+ExecStartPre=/usr/bin/bash /root/theRealCamSetup.sh
+ExecStart=/usr/bin/python /root/pisight.py
+StandardOutput=journal
+
+[Install]
+WantedBy=multi-user.target

@@ -8,18 +8,19 @@ from time import time
 
 import random
 
-DEBUG_MODE = 0
+DEBUG_MODE = 1
 
+n = True
 per = 50000
 countper = 0
 thingabob = per
 class MockSerial:
 	def readline(self):
-		global thingabob, per, countper
-		if countper >= 6:
+		global thingabob, per, countper, n
+		if countper >= 8:
 			countper = 0
 			n = bool(random.getrandbits(1))
-			print(str(n))
+			print("Type: " + str(n))
 			return ("shooter\n" if n else "gears\n").encode()
 		if thingabob:
 			thingabob -= 1
@@ -27,7 +28,7 @@ class MockSerial:
 		else:
 			thingabob = per
 			countper += 1
-			return "boom\n".encode()
+			return ("shooter\n" if n else "gears\n").encode()
 		#return "waffles\n".encode()
 		
 	def write(self, data):
@@ -141,7 +142,8 @@ CamState = "Shooter"	#vidcap default is 0
 SwitchState = False
 def readDistance():
 	global CamState, SwitchState, cap
-	if SwitchState != False and SwitchState != CamState:
+	if SwitchState != False:
+		print("reset")
 		global data
 		data = ["", "", "", ""]
 		if SwitchState == "Gears":
@@ -166,14 +168,16 @@ def checkGet():
 		global ser
 		ans = ser.readline()
 		if ans:
-			global data
-			if ans.decode() == "shooter\n" or ans.decode() == "gears\n":
-				global SwitchState
-				SwitchState = "Shooter" if ans.decode() == "shooter\n" else "Gears"
+			global data, SwitchState, CamState
+			if ans.decode() == "shooter\n" and CamState != "Shooter":
+				SwitchState = "Shooter"
+				ser.write("Affirmative\n".encode())
+				print("switching")
+			elif ans.decode() == "gears\n" and CamState != "Gears":
+				SwitchState = "Gears"
 				ser.write("Affirmative\n".encode())
 				print("switching")
 			else:
-				#print("transmit")
 				ser.write(("sm" + str(data[0]) + "m" + str(data[1]) + "m" + str(data[2]) + "m" + str(data[3]) + "e\n").encode())
 
 def main():
