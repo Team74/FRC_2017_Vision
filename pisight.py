@@ -8,7 +8,7 @@ from time import time
 
 import random
 
-DEBUG_MODE = 1
+DEBUG_MODE = 0
 
 n = True
 per = 50000
@@ -54,9 +54,9 @@ SCREEN_Y = 480
 SMALL_VAL = 0.1	#magic number 1
 FOV_X = 61		#pulled from online? Mostly a guess
 FOV_Y = 34
-REF_THETA = 45	#SPECIFY		#angle the camera is mounted
-REF_TOW_H = 2.35
-REF_CAM_H = 0.8#.8.85 #SPECIFY		#height of camera on the robot above the ground
+REF_THETA = 35	#SPECIFY		#angle the camera is mounted
+REF_TOW_H = 2.18
+REF_CAM_H = 0.24#.8.85 #SPECIFY		#height of camera on the robot above the ground
 DILATE_ITERATIONS = 0
 ERODE_ITERATIONS = 0
 
