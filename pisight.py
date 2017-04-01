@@ -132,10 +132,8 @@ def readDistanceGears():
 	cl = readImage()
 	if( len(cl) == 0):
 		return
-	elif len(cl) == 1:
-		mid_x = scrn21x(cl[0][0][0][0])
-	else:
-		mid_x = (scrn21x(cl[0][0][0][0]) + scrn21x(cl[1][0][0][0]))/2
+	n = int(len(cl) > 1 and cl[1][1]/cl[0][1] >= 0.8 and cl[0][0][0][0] < cl[1][0][0][0])
+	mid_x = scrn21x(cl[n][0][0][0] - cl[n][0][1][0]/2) 
 	data = [mid_x, 0, 0, -42]	#don't use
 
 CamState = "Shooter"	#vidcap default is 0
